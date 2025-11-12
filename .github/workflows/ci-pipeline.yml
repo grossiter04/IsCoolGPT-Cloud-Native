@@ -27,6 +27,8 @@ jobs:
 
       - name: 4. Rodar Testes Unitários (pytest)
         # Este comando roda os testes na pasta /tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: pytest
 
   # Job 2: Validar se a imagem Docker constrói
