@@ -1,15 +1,67 @@
-name: CD - Deploy Staging
+name: CD - Pipeline Automático (Staging -> Prod)
 
 on:
   push:
     branches: [ "staging" ]
 
+permissions:
+  contents: write 
 jobs:
+  # --- PASSO 1: DEPLOY EM STAGING ---
   deploy-staging:
+    name: 1. Deploy Staging
     runs-on: ubuntu-latest
-    # Só faz deploy se a validação do CI anterior tiver passado no commit
-    # (O GitHub Actions gerencia isso, mas aqui focamos no deploy)
-    
     steps:
-      - name: Acionar Deploy Hook do Render (Staging)
+      - uses: actions/checkout@v4
+      
+      # Testes rápidos
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt && pip install pytest httpx
+      - name: Rodar Testes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: pytest
+
+      - name: Acionar Render (Staging)
+        if: success()
         run: curl "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
+
+  # --- PASSO 2: AUTOMATIZAR MERGE PARA MAIN ---
+  promote-code:
+    name: 2. Promover Staging -> Main
+    needs: deploy-staging # Só roda se o staging deu certo
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Configurar Git e Fazer Merge
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          
+          # Muda para a branch main
+          git checkout main
+          git pull origin main
+          
+          # Mistura o código que está no Staging para dentro da Main
+          git merge origin/staging --no-edit
+          
+          # Envia para o GitHub
+          git push origin main
+
+  # --- PASSO 3: DEPLOY EM PRODUÇÃO ---
+  deploy-production:
+    name: 3. Deploy Produção
+    needs: promote-code # Só roda se o merge funcionou
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Acionar Render (Produção)
+        # Aciona o hook manualmente pois o push automático do bot
+        # muitas vezes não dispara outros workflows (segurança do GitHub)
+        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
