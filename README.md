@@ -68,8 +68,8 @@ O projeto utiliza uma estratégia de versionamento baseada em 3 branches princip
 ### Passo 1: Configuração Inicial
 1.  Clone o repositório:
     ```bash
-    git clone [https://github.com/grossiter04/Atividade-Tinoco.git](https://github.com/grossiter04/Atividade-Tinoco.git)
-    cd Atividade-Tinoco
+    git clone [https://github.com/grossiter04/IsCoolGPT-Cloud-Native.git](https://github.com/grossiter04/IsCoolGPT-Cloud-Native.git)
+    cd IsCoolGPT-Cloud-Native
     ```
 
 2.  Crie o arquivo `.env` na raiz do projeto e adicione sua chave:
